@@ -1,0 +1,110 @@
+#!/usr/bin/env zsh
+
+# Getting colors management tools from zsh utils
+autoload -U colors
+colors
+
+info() {
+	echo -e "${fg_bold[green]}--${fg_bold[white]} $1${reset_color}"
+}
+
+warning() {
+	echo -e "${fg_bold[yellow]}-- WARNING: $1${reset_color}" >&2
+}
+
+error() {
+	echo -e "${fg_bold[red]}-- ERROR: $1${reset_color}" >&2
+}
+
+print_pkgfile() {
+	# TODO:
+	#   * Use sed to transform keywords into values. (eg. @NAME@ into 
+	#     $(basename $PWD), things like that)
+	#   * Also use a /etc/prtcreate dir to add system-wide default
+	#     Pkgfiles.
+	if [[ -n "$PRTCREATE_TYPE" ]]; then
+		if [[ -e "$PRTCREATE_HOMEDIR/pkgfiles/$PRTCREATE_TYPE" ]]; then
+			cat "$PRTCREATE_HOMEDIR/pkgfiles/$PRTCREATE_TYPE"
+		else
+			error "Pkgfile type '$PRTCREATE_TYPE' is not available."
+		fi
+	else # FIXME: The bad method we should rewrite anyway using a /etc/prtcreate.
+	cat <<-EOF
+packager="$packager"
+maintainer="${maintainer:-$packager}"
+description=
+url=
+license=
+
+longdesc=""
+
+depends=()
+
+iuse=()
+
+name="$(basename "$PRTCREATE_ROOT")"
+version=
+release=1
+source=()
+
+build() {
+	:
+}
+	EOF
+	fi
+}
+
+parse_opts() {
+	while [[ -n "$1" ]]; do
+		case "$1" in
+			-v|--version)
+				echo "$(basename "$PRTCREATE_COMMAND") $PRTCREATE_VERSION"
+				exit 0 ;;
+			-h|--help)
+				print_help
+				exit 0 ;;
+			-*)
+				print_help
+				exit 1 ;;
+			*)
+				if [[ -z "$PRTCREATE_TYPE" ]]; then
+					PRTCREATE_TYPE="$1"
+				else
+					error "You may specify only one Pkgfile type."
+				fi ;;
+		esac
+		shift 1
+	done
+}
+
+print_help() {
+	echo "usage: $(basename "$PRTCREATE_COMMAND") [Pkgfile type] [options]"
+	echo "options:"
+	echo "  -h, --help          prints this help message"
+	echo "  -v, --version       prints prtcreate's version"
+}
+
+main() {
+	parse_opts "$@"
+	
+	if [[ -e "$PRTCREATERC" && -r "$PRTCREATERC" ]]; then
+		. $PRTCREATERC
+	fi
+	
+	if [[ -e "$PRTCREATE_ROOT/Pkgfile" ]]; then
+		error "A Pkgfile is already present in this directory."
+	else
+		print_pkgfile > "$PRTCREATE_ROOT/Pkgfile"
+	fi
+}
+
+readonly PRTCREATE_VERSION="#VERSION#"
+readonly PRTCREATE_COMMAND="$0"
+readonly PRTCREATE_ROOT="$PWD"
+
+PRTCREATE_HOMEDIR="~/.config/prtcreate"
+PRTCREATERC="$PRTCREATE_HOMEDIR/prtcreaterc"
+PRTCREATE_TYPE=""
+
+main "$@"
+
