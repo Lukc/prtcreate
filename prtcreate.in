@@ -16,41 +16,38 @@ error() {
 	echo -e "${fg_bold[red]}-- ERROR: $1${reset_color}" >&2
 }
 
+pkgfile_filter() {
+	sed -e "s/#name#/${name}/" \
+	    -e "s/#packager#/${packager//\//\\/}/" \
+	    -e "s/#maintainer#/${maintainer//\//\\/}/"
+}
+
 print_pkgfile() {
-	# TODO:
-	#   * Use sed to transform keywords into values. (eg. @NAME@ into 
-	#     $(basename $PWD), things like that)
-	#   * Also use a /etc/prtcreate dir to add system-wide default
-	#     Pkgfiles.
+	# First we export needed variables for pkgfile_filter().
+	export name="$(basename "$PRTCREATE_ROOT")"
+	if [[ -z "$maintainer" ]]; then
+		export maintainer="$packager" # If empty, we don’t loose much.
+	fi
+	
+	# And then we check in we can use a particular predefined recipe, and 
+	#+ then we build.
 	if [[ -n "$PRTCREATE_TYPE" ]]; then
 		if [[ -e "$PRTCREATE_HOMEDIR/pkgfiles/$PRTCREATE_TYPE" ]]; then
-			cat "$PRTCREATE_HOMEDIR/pkgfiles/$PRTCREATE_TYPE"
+			cat "$PRTCREATE_HOMEDIR/pkgfiles/$PRTCREATE_TYPE" | pkgfile_filter
 		else
 			error "Pkgfile type '$PRTCREATE_TYPE' is not available."
 		fi
-	else # FIXME: The bad method we should rewrite anyway using a /etc/prtcreate.
-	cat <<-EOF
-packager="$packager"
-maintainer="${maintainer:-$packager}"
-description=
-url=
-license=
-
-longdesc=""
-
-depends=()
-
-iuse=()
-
-name="$(basename "$PRTCREATE_ROOT")"
-version=
-release=1
-source=()
-
-build() {
-	:
-}
-	EOF
+	else
+		for DIR in "$PRTCREATE_SYSCONFDIR" "$PRTCREATE_HOMEDIR"; do
+			if [[ -r "$DIR/default_recipe" ]]; then
+				cat "$DIR/default_recipe" | pkgfile_filter
+				return $?
+			fi
+		done
+		# If we are here, we did not found any default_recipe.
+		error "No standard recipe has been found on your system."
+		error "$(basename "$PRTCREATE_COMMAND") is probably not installed correctly."
+		exit 1
 	fi
 }
 
@@ -87,9 +84,11 @@ print_help() {
 main() {
 	parse_opts "$@"
 	
-	if [[ -e "$PRTCREATERC" && -r "$PRTCREATERC" ]]; then
-		. $PRTCREATERC
-	fi
+	for DIR in "$PRTCREATE_SYSCONFDIR" "$PRTCREATE_HOMEDIR"; do
+		if [[ -e "$DIR/$PRTCREATERC" && -r "$DIR/$PRTCREATERC" ]]; then
+			. "$DIR/$PRTCREATERC"
+		fi
+	done
 	
 	if [[ -e "$PRTCREATE_ROOT/Pkgfile" ]]; then
 		error "A Pkgfile is already present in this directory."
@@ -102,8 +101,9 @@ readonly PRTCREATE_VERSION="#VERSION#"
 readonly PRTCREATE_COMMAND="$0"
 readonly PRTCREATE_ROOT="$PWD"
 
-PRTCREATE_HOMEDIR="~/.config/prtcreate"
-PRTCREATERC="$PRTCREATE_HOMEDIR/prtcreaterc"
+PRTCREATE_SYSCONFDIR="#SYSCONFDIR#/prtcreate"
+PRTCREATE_HOMEDIR="$HOME/.config/prtcreate"
+PRTCREATERC="prtcreaterc"
 PRTCREATE_TYPE=""
 
 main "$@"

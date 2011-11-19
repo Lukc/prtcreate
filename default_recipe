@@ -1,0 +1,21 @@
+packager="#packager#"
+maintainer="#maintainer#"
+description=
+url=
+license=
+
+longdesc=""
+
+depends=()
+
+iuse=()
+
+name="#name#"
+version=
+release=1
+source=()
+
+build() {
+	:
+}
+

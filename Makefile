@@ -6,15 +6,25 @@ VERSION = 0.1-`git rev-list --all 2>/dev/null | wc -l | sed -e 's| *||g'`
 DESTDIR ?= 
 PREFIX ?= /usr
 BINDIR ?= ${PREFIX}/bin
+SYSCONFDIR ?= /etc
 
 # Real rules.
 prtcreate: prtcreate.in
-	sed -e "s/#VERSION#/${VERSION}/" prtcreate.in > prtcreate
+	sed -e "s/#VERSION#/${VERSION}/" \
+	    -e "s|#SYSCONFDIR#|${SYSCONFDIR}|" \
+		prtcreate.in > prtcreate
 	chmod +x prtcreate
 
-install: prtcreate
-	mkdir -p ${DESTDIR}${BINDIR}
+install: prtcreate install-recipes install-dirs
 	install -m 0755 prtcreate ${DESTDIR}${BINDIR}/prtcreate
+
+install-recipes: install-dirs
+	install -m 0644 default_recipe ${DESTDIR}${SYSCONFDIR}/prtcreate/default_recipe
+	mkdir -p ${DESTDIR}${SYSCONFDIR}/prtcreate/pkgfiles
+
+install-dirs:
+	mkdir -p ${DESTDIR}${BINDIR}
+	mkdir -p ${DESTDIR}${SYSCONFDIR}/prtcreate
 
 clean:
 	rm -f prtcreate
