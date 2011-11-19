@@ -20,6 +20,7 @@ install: prtcreate install-recipes install-dirs
 
 install-recipes: install-dirs
 	install -m 0644 default_recipe ${DESTDIR}${SYSCONFDIR}/prtcreate/default_recipe
+	cp -r pkgfiles ${DESTDIR}${SYSCONFDIR}/prtcreate/
 	mkdir -p ${DESTDIR}${SYSCONFDIR}/prtcreate/pkgfiles
 
 install-dirs:

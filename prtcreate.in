@@ -32,11 +32,15 @@ print_pkgfile() {
 	# And then we check in we can use a particular predefined recipe, and 
 	#+ then we build.
 	if [[ -n "$PRTCREATE_TYPE" ]]; then
-		if [[ -e "$PRTCREATE_HOMEDIR/pkgfiles/$PRTCREATE_TYPE" ]]; then
-			cat "$PRTCREATE_HOMEDIR/pkgfiles/$PRTCREATE_TYPE" | pkgfile_filter
-		else
-			error "Pkgfile type '$PRTCREATE_TYPE' is not available."
-		fi
+		for DIR in "$PRTCREATE_HOMEDIR/pkgfiles" "$PRTCREATE_SYSCONFDIR/pkgfiles"; do
+			if [[ -e "$DIR/$PRTCREATE_TYPE" ]]; then
+				cat "$DIR/$PRTCREATE_TYPE" | pkgfile_filter
+				return $?
+			fi
+		done
+		# If we are here, we did not found the desired recipe.
+		error "Pkgfile type '$PRTCREATE_TYPE' is not available."
+		exit 1
 	else
 		for DIR in "$PRTCREATE_SYSCONFDIR" "$PRTCREATE_HOMEDIR"; do
 			if [[ -r "$DIR/default_recipe" ]]; then
