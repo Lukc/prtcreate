@@ -43,13 +43,18 @@ error() {
 
 pkgfile_filter() {
 	sed -e "s/#name#/${name}/" \
+	    -e "s/#version#/${version}/" \
+	    -e "s/#url#/${url}/" \
 	    -e "s/#packager#/${packager//\//\\/}/" \
 	    -e "s/#maintainer#/${maintainer//\//\\/}/"
 }
 
 print_pkgfile() {
 	# First we export needed variables for pkgfile_filter().
-	export name="$(basename "$PRTCREATE_ROOT")"
+	if [[ -z "${name}" ]]; then
+		export name="$(basename "$PRTCREATE_ROOT")"
+	fi
+	
 	if [[ -z "$maintainer" ]]; then
 		export maintainer="$packager" # If empty, we don’t loose much.
 	fi
@@ -77,6 +82,13 @@ print_pkgfile() {
 		error "No standard recipe has been found on your system."
 		error "$(basename "$PRTCREATE_COMMAND") is probably not installed correctly."
 		exit 1
+	fi
+}
+
+get_package_data() {
+	if [[ -e configure ]]; then
+		name="$(grep PACKAGE_NAME= configure | sed -e "s/PACKAGE_NAME=//;s/'//g")"
+		version="$(grep PACKAGE_VERSION= configure | sed -e "s/PACKAGE_VERSION=//;s/'//g")"
 	fi
 }
 
@@ -112,6 +124,8 @@ print_help() {
 
 main() {
 	parse_opts "$@"
+	
+	get_package_data
 	
 	for DIR in "$PRTCREATE_SYSCONFDIR" "$PRTCREATE_HOMEDIR"; do
 		if [[ -e "$DIR/$PRTCREATERC" && -r "$DIR/$PRTCREATERC" ]]; then

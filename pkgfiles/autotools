@@ -1,7 +1,7 @@
 packager="#packager#"
 maintainer="#maintainer#"
 description=
-url=
+url=#url#
 license=
 
 longdesc=""
@@ -11,7 +11,7 @@ depends=()
 iuse=()
 
 name="#name#"
-version=
+version=#version#
 release=1
 source=()
 includes=(autotools)
