@@ -1,6 +1,5 @@
 
-# Just remove the -`git part if you want to release.
-VERSION = 0.1-`git rev-list --all 2>/dev/null | wc -l | sed -e 's| *||g'`
+VERSION = 0.1
 
 # Prefixes, pathes and dirnames
 DESTDIR ?= 
@@ -30,10 +29,11 @@ install-dirs:
 clean:
 	rm -f prtcreate
 
-dist:
+dist: clean
 	mkdir prtcreate-${VERSION}
-	cp Makefile prtcreate.in prtcreate-${VERSION}
-	tar czf prtcreate-${VERSION}.tar.xz prtcreate-${VERSION}
+	cp -r Makefile prtcreate.in default_recipe pkgfiles prtcreate-${VERSION}
+	tar czf prtcreate-${VERSION}.tar.gz prtcreate-${VERSION}
+	tar czf prtcreate-${VERSION}.tar.bz2 prtcreate-${VERSION}
 	# Very few people use/have xz, so a failure in building this tarball 
 	#+ is not really important.
 	-tar cJf prtcreate-${VERSION}.tar.xz prtcreate-${VERSION}
